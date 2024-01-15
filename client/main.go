@@ -52,6 +52,7 @@ func main() {
 		log.Fatalf("Couldn't add product: %v", err)
 	}
 
+	updateID1 := r.Value
 	log.Printf("Product ID: %s added successfully", r.Value)
 
 	name = "Samsung galaxy note"
@@ -67,6 +68,7 @@ func main() {
 		log.Fatalf("Couldn't add product: %v", err)
 	}
 
+	updateID2 := r.Value
 	log.Printf("Product ID: %s added successfully", r.Value)
 
 	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
@@ -92,4 +94,30 @@ func main() {
 
 		log.Println("Search result: ", searchOrder)
 	}
+
+	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	updateStream, err := c.UpdateProduct(ctx)
+
+	if err != nil {
+		log.Fatalf("%v.UpdateProduct() = _, %v", c, err)
+	}
+
+	updateP1 := pb.Product{Id: updateID1, Name: "Apple updated ipad 11", Description: "updated desc"}
+	updateP2 := pb.Product{Id: updateID2, Name: "Samsung updated galaxy note", Description: "updated desc"}
+	if err := updateStream.Send(&updateP1); err != nil {
+		log.Fatalf("%v.Send(%v) = %v", updateStream, updateP1, err)
+	}
+
+	if err := updateStream.Send(&updateP2); err != nil {
+		log.Fatalf("%v.Send(%v) = %v", updateStream, updateP1, err)
+	}
+
+	updateRes, err := updateStream.CloseAndRecv()
+	if err != nil {
+		log.Fatalf("%v.CloseAndRecv() error %v, want %v", updateStream, err, nil)
+	}
+
+	log.Println("Update products:", updateRes)
 }
